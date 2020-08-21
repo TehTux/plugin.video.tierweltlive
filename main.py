@@ -138,8 +138,8 @@ def list_videos(id, page):
             })
             url = get_url(action='play_video', id=video['pk'])
         list_item.addStreamInfo('video', {
-            'width': 1280,
-            'height': 720
+            'width': unicode(1280),
+            'height': unicode(720)
         })
         list_item.setProperty('IsPlayable', 'true')
         xbmcplugin.addDirectoryItem(HANDLE, url, list_item, False)
