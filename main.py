@@ -1,7 +1,9 @@
 # coding=utf-8
 import sys
-from urllib import urlencode
-from urlparse import parse_qsl
+import re
+import json
+from urllib.parse import urlencode, parse_qsl
+from xml.dom import minidom
 import requests
 import xbmcgui
 import xbmcplugin
@@ -14,6 +16,37 @@ USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Ge
 API_CONFIG = requests.get("https://twl-prod-static.s3.amazonaws.com/configs/projectConfig_smartclip.json", headers={'USER-AGENT':USER_AGENT}).json()
 API_VERSION = requests.get(API_CONFIG['ivms']['version'], headers={'USER-AGENT':USER_AGENT}).json()['version_name']
 VIDEO_API = API_CONFIG['ivms']['restapi'].replace("[version]", API_VERSION)
+RSS_RESOURCE = 'https://twl-aggregation.s3.us-east-1.amazonaws.com/livestream.xml'
+
+def get_rss_resource():
+    rss_items = list()
+    response = requests.get(RSS_RESOURCE, headers={'USER-AGENT':USER_AGENT})
+    xml = minidom.parseString(response.text).getElementsByTagName('rss')
+    channel = xml[0].getElementsByTagName('channel')
+    items = channel[0].getElementsByTagName('item')
+
+    for item in items:
+        url = item.getElementsByTagName('media:content')[0].getAttribute('url')
+        video = dict({
+            'title': item.getElementsByTagName('title')[0].firstChild.wholeText,
+            'teaser': item.getElementsByTagName('media:description')[0].firstChild.wholeText,
+            'images': item.getElementsByTagName('media:thumbnail')[0].getAttribute('url'),
+            'fanart': item.getElementsByTagName('media:thumbnail')[0].getAttribute('url'),
+            'pk': re.compile('cdn-segments.tierwelt-live.de/(.+?)_twl_720p.m4v/playlist.m3u8').findall(url)[0],
+            'mediatype': item.getElementsByTagName('media:content')[0].getAttribute('type'),
+            'filesize': int(item.getElementsByTagName('media:content')[0].getAttribute('fileSize')),
+            'channels': int(item.getElementsByTagName('media:content')[0].getAttribute('channels')),
+            'width': int(item.getElementsByTagName('media:content')[0].getAttribute('width')),
+            'height': int(item.getElementsByTagName('media:content')[0].getAttribute('height')),
+            'bitrate': int(item.getElementsByTagName('media:content')[0].getAttribute('bitrate')),
+            'expression': item.getElementsByTagName('media:content')[0].getAttribute('expression'),
+            'duration_in_ms': int(item.getElementsByTagName('media:content')[0].getAttribute('duration')) * 1000,
+            'language': item.getElementsByTagName('media:content')[0].getAttribute('lang'),
+            'rating': item.getElementsByTagName('media:rating')[0].firstChild.wholeText,
+            'aired': item.getElementsByTagName('pubDate')[0].firstChild.wholeText
+        })
+        rss_items.append(video)
+    return json.loads(json.dumps({'rss': rss_items}))
 
 
 def get_url(**kwargs):
@@ -27,7 +60,7 @@ def list_pages():
     my_addon = xbmcaddon.Addon('plugin.video.tierweltlive')
     xbmcplugin.setPluginCategory(HANDLE, 'Start')
     xbmcplugin.setContent(HANDLE, 'videos')
-    pages = {"Themen":"56", "Kanäle":"57", "Tiere":"58"}
+    pages = {"aktuelle Livestreams":"rss", "Themen":"56", "Kanäle":"57", "Tiere":"58"}
     for page in pages:
         list_item = xbmcgui.ListItem(label=page)
         list_item.setArt({
@@ -38,6 +71,8 @@ def list_pages():
             'plot': my_addon.getAddonInfo('description')
         })
         url = get_url(action='list_categories', page=pages[page], childs=False)
+        if pages[page] == 'rss':
+            url = get_url(action='list_videos', id=None, category=pages[page])
         xbmcplugin.addDirectoryItem(HANDLE, url, list_item, True)
     xbmcplugin.addSortMethod(HANDLE, xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
     xbmcplugin.endOfDirectory(HANDLE)
@@ -95,16 +130,22 @@ def list_videos(id, page):
     """
     xbmcplugin.setPluginCategory(HANDLE, "Videos")
     xbmcplugin.setContent(HANDLE, 'videos')
-    category = requests.get(VIDEO_API + page + "s/" + id + ".json", headers={'USER-AGENT':USER_AGENT}).json()
+
+    if page == 'rss':
+        category = get_rss_resource()
+    else:
+        category = requests.get(VIDEO_API + page + "s/" + id + ".json", headers={'USER-AGENT':USER_AGENT}).json()
     if page == 'animal':
         category = requests.get(VIDEO_API + "containers/" + str(category['containers'][0]) + ".json", headers={'USER-AGENT':USER_AGENT}).json()
         videos = category['items']
+    elif page == 'rss':
+        videos = category['rss']
     else:
         videos = category['contains_media']
+
     for video in videos:
         if page == 'animal':
             list_item = xbmcgui.ListItem(label=video['unicode'])
-            url = get_url(action='play_video', id=video['id'])
             media = requests.get(VIDEO_API + "media/" + str(video['id']) + ".json", headers={'USER-AGENT':USER_AGENT}).json()
             list_item.setInfo('video', {
                 'duration': int(round(media['duration_in_ms']/1000)),
@@ -120,6 +161,22 @@ def list_videos(id, page):
                 'thumb': media['images'][0]['url'],
                 'fanart': media['images'][0]['url']
             })
+            url = get_url(action='play_video', id=video['id'], uuid='None')
+        elif page == 'rss':
+            list_item = xbmcgui.ListItem(label=video['title'])
+            list_item.setInfo('video', {
+                'duration': int(round(video['duration_in_ms'] / 1000)),
+                'title': video['title'],
+                'mediatype': 'video',
+                'plot': video['teaser'],
+                'premiered': video['aired'],
+                'aired': video['aired'],
+                'dateadded': video['aired']
+            })
+            list_item.setArt({
+                'thumb': video['images'],
+                'fanart': video['images']})
+            url = get_url(action='play_video', id=video['pk'], uuid=video['pk'])
         else:
             list_item = xbmcgui.ListItem(label=video['title'])
             list_item.setInfo('video', {
@@ -136,10 +193,11 @@ def list_videos(id, page):
                 'thumb': video['images'][0]['url'],
                 'fanart': video['images'][0]['url']
             })
-            url = get_url(action='play_video', id=video['pk'])
+            url = get_url(action='play_video', id=video['pk'], uuid='None')
+
         list_item.addStreamInfo('video', {
-            'width': unicode(1280),
-            'height': unicode(720)
+            'width': 1280,
+            'height': 720
         })
         list_item.setProperty('IsPlayable', 'true')
         xbmcplugin.addDirectoryItem(HANDLE, url, list_item, False)
@@ -147,11 +205,12 @@ def list_videos(id, page):
     xbmcplugin.endOfDirectory(HANDLE)
 
 
-def play_video(id):
+def play_video(id, uuid):
     """
     Play a video by the provided path.
     """
-    uuid = requests.get(VIDEO_API + "media/" + id + ".json", headers={'USER-AGENT':USER_AGENT}).json()['uuid']
+    if uuid == 'None':
+        uuid = requests.get(VIDEO_API + "media/" + id + ".json", headers={'USER-AGENT':USER_AGENT}).json()['uuid']
     play_item = xbmcgui.ListItem(path="https://cdn-segments.tierwelt-live.de/" + uuid + "_twl_720p.m4v/playlist.m3u8")
     xbmcplugin.setResolvedUrl(HANDLE, True, listitem=play_item)
 
@@ -161,13 +220,14 @@ def router(paramstring):
     Router function that calls other functions depending on the provided paramstring
     """
     params = dict(parse_qsl(paramstring))
+    print(params)
     if params:
         if params['action'] == 'list_categories':
             list_categories(params['page'],params['childs'])
         elif params['action'] == 'list_videos':
             list_videos(params['id'],params['category'])
         elif params['action'] == 'play_video':
-            play_video(params['id']) 
+            play_video(params['id'],params['uuid'])
         else:
             raise ValueError('Invalid paramstring: {0}!'.format(paramstring))
     else:
