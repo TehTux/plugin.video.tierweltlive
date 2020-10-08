@@ -9,8 +9,11 @@
 </extension>
 <extension point="xbmc.addon.metadata">
   <summary lang="de">Video Plugin für TIERWELT Live</summary>
+  <summary lang="en">Video Plugin for TIERWELT Live</summary>
   <description lang="de">TIERWELT live ist ein Video on Demand Portal für Tierliebhaber und Naturfreunde. Das Videoportal bietet Zuschauern kostenlos den Abruf von Tierfilmen aus TV und Kino, von Reportagen, Doku-Serien und kurzen Clips an. Themen rund um Naturschutz, Abenteuer, Tipps für Haustier-Halter und Blicke hinter die Kamera eines Naturfilms haben ihren eigenen Channel. Das Angebot umfasst hunderte zum Teil international ausgezeichnete Produktionen von den „Expeditionen ins Tierreich” bis zu „BBC Earth” und eigens für das Portal produzierte Formate.</description>
+  <description lang="en">TIERWELT live is a video on demand portal for animal lovers and nature lovers. The video portal offers viewers free access to animal films from TV and cinema, reports, documentary series and short clips. Topics related to nature conservation, adventure, tips for pet owners and glimpses behind the camera of a nature film have their own channel. The offer includes hundreds of productions, some of which have won international awards, from "Expeditions into the Animal Kingdom" to "BBC Earth" and formats produced especially for the portal.</description>
   <disclaimer lang="de">Dies ist ein vom Portal nicht unterstütztes, inoffizielles Video Plugin für TIERWELT Live (www.tierwelt-live.de).</disclaimer>
+  <disclaimer lang="en">This is an unofficial video plugin for TIERWELT Live (www.tierwelt-live.de) which is not supported by the distributors of the portal.</disclaimer>
   <language>de</language>
   <platform>all</platform>
   <source>https://github.com/TehTux/plugin.video.tierweltlive</source>
