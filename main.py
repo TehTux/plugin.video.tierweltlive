@@ -1,18 +1,23 @@
 # coding=utf-8
+"""Kodi Video Plugin for TIERWELT Live"""
 import sys
 from urllib import urlencode
 from urlparse import parse_qsl
 import requests
-import xbmcgui
-import xbmcplugin
-import xbmcaddon
+import xbmcgui  # pylint: disable=E0401
+import xbmcplugin  # pylint: disable=E0401
+import xbmcaddon  # pylint: disable=E0401
 
 
 URL = sys.argv[0]
 HANDLE = int(sys.argv[1])
-USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.82 Safari/537.36'
-API_CONFIG = requests.get("https://twl-prod-static.s3.amazonaws.com/configs/projectConfig_smartclip.json", headers={'USER-AGENT':USER_AGENT}).json()
-API_VERSION = requests.get(API_CONFIG['ivms']['version'], headers={'USER-AGENT':USER_AGENT}).json()['version_name']
+USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko)' + \
+             ' Chrome/48.0.2564.82 Safari/537.36'
+API_CONFIG = requests.get(
+    "https://twl-prod-static.s3.amazonaws.com/configs/projectConfig_smartclip.json",
+    headers={'USER-AGENT':USER_AGENT}).json()
+API_VERSION = requests.get(
+    API_CONFIG['ivms']['version'], headers={'USER-AGENT':USER_AGENT}).json()['version_name']
 VIDEO_API = API_CONFIG['ivms']['restapi'].replace("[version]", API_VERSION)
 
 
@@ -24,6 +29,9 @@ def get_url(**kwargs):
 
 
 def list_pages():
+    """
+    Show plugin start page with pages "Themen, Kanäle, Tiere".
+    """
     my_addon = xbmcaddon.Addon('plugin.video.tierweltlive')
     xbmcplugin.setPluginCategory(HANDLE, 'Start')
     xbmcplugin.setContent(HANDLE, 'videos')
@@ -50,8 +58,10 @@ def list_categories(page, childs):
     xbmcplugin.setPluginCategory(HANDLE, 'Kategorien')
     xbmcplugin.setContent(HANDLE, 'videos')
     if childs == 'False':
-        categories = requests.get(VIDEO_API + "containers/" + page + ".json", headers={'USER-AGENT':USER_AGENT}).json()['items']
-    else: 
+        categories = requests.get(
+            VIDEO_API + "containers/" + page + ".json",
+            headers={'USER-AGENT':USER_AGENT}).json()['items']
+    else:
         categories = list(childs[1:-1].split(", "))
     for category in categories:
         if childs == 'False':
@@ -60,14 +70,16 @@ def list_categories(page, childs):
         else:
             category_module = "channel"
             category_id = category
-        category_info = requests.get(VIDEO_API + category_module + "s/" + str(category_id) + ".json", headers={'USER-AGENT':USER_AGENT}).json()
+        category_info = requests.get(
+            VIDEO_API + category_module + "s/" + str(category_id) + ".json",
+            headers={'USER-AGENT':USER_AGENT}).json()
         if childs == 'False':
             category_title = category['unicode']
         else:
             category_title = category_info['title']
         list_item = xbmcgui.ListItem(label=category_title)
         list_item.setInfo('video', {
-            'title': category_title, 
+            'title': category_title,
             'plot': category_info['description'],
             'tag': category_info['tags'],
             'dateadded': category_info['created']
@@ -89,15 +101,18 @@ def list_categories(page, childs):
     xbmcplugin.endOfDirectory(HANDLE)
 
 
-def list_videos(id, page):
+def list_videos(page_id, page):
     """
     Create the list of playable videos in the Kodi interface.
     """
     xbmcplugin.setPluginCategory(HANDLE, "Videos")
     xbmcplugin.setContent(HANDLE, 'videos')
-    category = requests.get(VIDEO_API + page + "s/" + id + ".json", headers={'USER-AGENT':USER_AGENT}).json()
+    category = requests.get(
+        VIDEO_API + page + "s/" + page_id + ".json", headers={'USER-AGENT':USER_AGENT}).json()
     if page == 'animal':
-        category = requests.get(VIDEO_API + "containers/" + str(category['containers'][0]) + ".json", headers={'USER-AGENT':USER_AGENT}).json()
+        category = requests.get(
+            VIDEO_API + "containers/" + str(category['containers'][0]) + ".json",
+            headers={'USER-AGENT':USER_AGENT}).json()
         videos = category['items']
     else:
         videos = category['contains_media']
@@ -105,10 +120,12 @@ def list_videos(id, page):
         if page == 'animal':
             list_item = xbmcgui.ListItem(label=video['unicode'])
             url = get_url(action='play_video', id=video['id'])
-            media = requests.get(VIDEO_API + "media/" + str(video['id']) + ".json", headers={'USER-AGENT':USER_AGENT}).json()
+            media = requests.get(
+                VIDEO_API + "media/" + str(video['id']) + ".json",
+                headers={'USER-AGENT':USER_AGENT}).json()
             list_item.setInfo('video', {
                 'duration': int(round(media['duration_in_ms']/1000)),
-                'title': media['title'], 
+                'title': media['title'],
                 'mediatype': 'video',
                 'plot': media['teaser'],
                 'premiered': media['web_airdate'],
@@ -124,7 +141,7 @@ def list_videos(id, page):
             list_item = xbmcgui.ListItem(label=video['title'])
             list_item.setInfo('video', {
                 'duration': int(round(video['duration_in_ms']/1000)),
-                'title': video['title'], 
+                'title': video['title'],
                 'mediatype': 'video',
                 'plot': video['teaser'],
                 'premiered': category['web_airdate'],
@@ -147,12 +164,14 @@ def list_videos(id, page):
     xbmcplugin.endOfDirectory(HANDLE)
 
 
-def play_video(id):
+def play_video(video_id):
     """
     Play a video by the provided path.
     """
-    uuid = requests.get(VIDEO_API + "media/" + id + ".json", headers={'USER-AGENT':USER_AGENT}).json()['uuid']
-    play_item = xbmcgui.ListItem(path="https://cdn-segments.tierwelt-live.de/" + uuid + "_twl_720p.m4v/playlist.m3u8")
+    uuid = requests.get(
+        VIDEO_API + "media/" + video_id + ".json", headers={'USER-AGENT':USER_AGENT}).json()['uuid']
+    play_item = xbmcgui.ListItem(
+        path="https://cdn-segments.tierwelt-live.de/" + uuid + "_twl_720p.m4v/playlist.m3u8")
     xbmcplugin.setResolvedUrl(HANDLE, True, listitem=play_item)
 
 
@@ -163,11 +182,11 @@ def router(paramstring):
     params = dict(parse_qsl(paramstring))
     if params:
         if params['action'] == 'list_categories':
-            list_categories(params['page'],params['childs'])
+            list_categories(params['page'], params['childs'])
         elif params['action'] == 'list_videos':
-            list_videos(params['id'],params['category'])
+            list_videos(params['id'], params['category'])
         elif params['action'] == 'play_video':
-            play_video(params['id']) 
+            play_video(params['id'])
         else:
             raise ValueError('Invalid paramstring: {0}!'.format(paramstring))
     else:
