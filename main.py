@@ -3,13 +3,13 @@
 import sys
 from urllib import urlencode
 from urlparse import parse_qsl
+import json
+import re
+from xml.dom import minidom
 import requests
 import xbmcgui  # pylint: disable=E0401
 import xbmcplugin  # pylint: disable=E0401
 import xbmcaddon  # pylint: disable=E0401
-import json
-import re
-from xml.dom import minidom
 
 
 URL = sys.argv[0]
@@ -35,6 +35,9 @@ def get_url(**kwargs):
 
 
 def get_rss_content():
+    """
+    Read and convert RSS Feed of 'Tierweöt live' into JSON
+    """
     xml = minidom.parseString(RSS_RESOURCE).getElementsByTagName('rss')
     channel = xml[0].getElementsByTagName('channel')
     items = channel[0].getElementsByTagName('item')
@@ -152,7 +155,7 @@ def list_videos(page_id, page):
         category = get_rss_content()
     else:
         category = requests.get(
-        VIDEO_API + page + "s/" + page_id + ".json", headers={'USER-AGENT':USER_AGENT}).json()
+            VIDEO_API + page + "s/" + page_id + ".json", headers={'USER-AGENT':USER_AGENT}).json()
 
     if page == 'animal':
         category = requests.get(
@@ -232,7 +235,8 @@ def play_video(video_id, uuid):
     """
     if uuid == 'None':
         uuid = requests.get(
-            VIDEO_API + "media/" + video_id + ".json", headers={'USER-AGENT':USER_AGENT}).json()['uuid']
+            VIDEO_API + "media/" + video_id + ".json",
+            headers={'USER-AGENT':USER_AGENT}).json()['uuid']
     play_item = xbmcgui.ListItem(
         path="https://cdn-segments.tierwelt-live.de/" + uuid + "_twl_720p.m4v/playlist.m3u8")
     xbmcplugin.setResolvedUrl(HANDLE, True, listitem=play_item)
