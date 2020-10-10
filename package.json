@@ -1,0 +1,18 @@
+{
+  "name": "plugin.video.tierweltlive",
+  "description": "Kodi Video Plugin for TIERWELT Live",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TehTux/plugin.video.tierweltlive.git"
+  },
+  "author": "TehTux",
+  "bugs": {
+    "url": "https://github.com/TehTux/plugin.video.tierweltlive/issues"
+  },
+  "homepage": "https://github.com/TehTux/plugin.video.tierweltlive#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^11.0.0",
+    "@commitlint/config-conventional": "^11.0.0",
+    "@commitlint/travis-cli": "^11.0.0"
+  }
+}
