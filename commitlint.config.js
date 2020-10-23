@@ -8,7 +8,7 @@ module.exports = {
     rules: {
         "header-max-length": [2, "always", 80],
         "type-enum": [2, "always", [
-            "[FEATURE]", "[BUGFIX]", "[DOCS]", "[TASK]", "[SECURITY]",
+            "[FEATURE]", "[BUGFIX]", "[DOCS]", "[TASK]", "[SECURITY]", "[RELEASE]",
         ]],
         "type-case": [2, "always", "upper-case"],
         "type-empty": [2, "never"],
