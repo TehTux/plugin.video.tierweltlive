@@ -17,6 +17,7 @@
   <language>de</language>
   <platform>all</platform>
   <license>GPL-2.0-only</license>
+  <forum>https://www.kodinerds.net/index.php/Thread/58126-Tierwelt-live/</forum>
   <source>https://github.com/TehTux/plugin.video.tierweltlive</source>
   <assets>
     <icon>resources\icon.jpg</icon>
