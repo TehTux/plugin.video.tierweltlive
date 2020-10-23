@@ -18,13 +18,13 @@ USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Ge
              ' Chrome/48.0.2564.82 Safari/537.36'
 API_CONFIG = requests.get(
     "https://twl-prod-static.s3.amazonaws.com/configs/projectConfig_smartclip.json",
-    headers={'USER-AGENT':USER_AGENT}).json()
+    headers={'USER-AGENT': USER_AGENT}).json()
 API_VERSION = requests.get(
-    API_CONFIG['ivms']['version'], headers={'USER-AGENT':USER_AGENT}).json()['version_name']
+    API_CONFIG['ivms']['version'], headers={'USER-AGENT': USER_AGENT}).json()['version_name']
 VIDEO_API = API_CONFIG['ivms']['restapi'].replace("[version]", API_VERSION)
 RSS_RESOURCE = requests.get(
     'https://twl-aggregation.s3.us-east-1.amazonaws.com/livestream.xml',
-    headers={'USER-AGENT':USER_AGENT}).text.encode('utf-8')
+    headers={'USER-AGENT': USER_AGENT}).text.encode('utf-8')
 
 
 def get_url(**kwargs):
@@ -36,7 +36,7 @@ def get_url(**kwargs):
 
 def get_rss_content():
     """
-    Read and convert RSS Feed of 'Tierweöt live' into JSON
+    Read and convert RSS Feed of 'Tierwelt live' into JSON
     """
     xml = minidom.parseString(RSS_RESOURCE).getElementsByTagName('rss')
     channel = xml[0].getElementsByTagName('channel')
@@ -50,7 +50,8 @@ def get_rss_content():
             'teaser': item.getElementsByTagName('media:description')[0].firstChild.wholeText,
             'images': item.getElementsByTagName('media:thumbnail')[0].getAttribute('url'),
             'fanart': item.getElementsByTagName('media:thumbnail')[0].getAttribute('url'),
-            'pk': re.compile('cdn-segments.tierwelt-live.de/(.+?)_twl_720p.m4v/playlist.m3u8').findall(url)[0],
+            'pk': re.compile(
+                'cdn-segments.tierwelt-live.de/(.+?)_twl_720p.m4v/playlist.m3u8').findall(url)[0],
             'mediatype': item.getElementsByTagName('media:content')[0].getAttribute('type'),
             'filesize': int(item.getElementsByTagName('media:content')[0].getAttribute('fileSize')),
             'channels': int(item.getElementsByTagName('media:content')[0].getAttribute('channels')),
@@ -58,7 +59,8 @@ def get_rss_content():
             'height': int(item.getElementsByTagName('media:content')[0].getAttribute('height')),
             'bitrate': int(item.getElementsByTagName('media:content')[0].getAttribute('bitrate')),
             'expression': item.getElementsByTagName('media:content')[0].getAttribute('expression'),
-            'duration_in_ms': int(item.getElementsByTagName('media:content')[0].getAttribute('duration')) * 1000,
+            'duration_in_ms': int(
+                item.getElementsByTagName('media:content')[0].getAttribute('duration')) * 1000,
             'language': item.getElementsByTagName('media:content')[0].getAttribute('lang'),
             'rating': item.getElementsByTagName('media:rating')[0].firstChild.wholeText,
             'aired': item.getElementsByTagName('pubDate')[0].firstChild.wholeText
@@ -69,12 +71,12 @@ def get_rss_content():
 
 def list_pages():
     """
-    Show plugin start page with pages "aktuelle Livestreams, Themen, Kanäle, Tiere".
+    Show plugin start page with pages "Aktuelle Livestreams, Themen, Kanäle, Tiere".
     """
     my_addon = xbmcaddon.Addon('plugin.video.tierweltlive')
     xbmcplugin.setPluginCategory(HANDLE, 'Start')
     xbmcplugin.setContent(HANDLE, 'videos')
-    pages = {"aktuelle Livestreams":"rss", "Themen":"56", "Kanäle":"57", "Tiere":"58"}
+    pages = {"Aktuelle Livestreams": "rss", "Themen": "56", "Kanäle": "57", "Tiere": "58"}
     for page in pages:
         list_item = xbmcgui.ListItem(label=page)
         list_item.setArt({
@@ -103,7 +105,7 @@ def list_categories(page, childs):
     if childs == 'False':
         categories = requests.get(
             VIDEO_API + "containers/" + page + ".json",
-            headers={'USER-AGENT':USER_AGENT}).json()['items']
+            headers={'USER-AGENT': USER_AGENT}).json()['items']
     else:
         categories = list(childs[1:-1].split(", "))
     for category in categories:
@@ -115,7 +117,7 @@ def list_categories(page, childs):
             category_id = category
         category_info = requests.get(
             VIDEO_API + category_module + "s/" + str(category_id) + ".json",
-            headers={'USER-AGENT':USER_AGENT}).json()
+            headers={'USER-AGENT': USER_AGENT}).json()
         if childs == 'False':
             category_title = category['unicode']
         else:
@@ -155,12 +157,12 @@ def list_videos(page_id, page):
         category = get_rss_content()
     else:
         category = requests.get(
-            VIDEO_API + page + "s/" + page_id + ".json", headers={'USER-AGENT':USER_AGENT}).json()
+            VIDEO_API + page + "s/" + page_id + ".json", headers={'USER-AGENT': USER_AGENT}).json()
 
     if page == 'animal':
         category = requests.get(
             VIDEO_API + "containers/" + str(category['containers'][0]) + ".json",
-            headers={'USER-AGENT':USER_AGENT}).json()
+            headers={'USER-AGENT': USER_AGENT}).json()
         videos = category['items']
     elif page == 'rss':
         videos = category['rss']
@@ -171,7 +173,7 @@ def list_videos(page_id, page):
             list_item = xbmcgui.ListItem(label=video['unicode'])
             media = requests.get(
                 VIDEO_API + "media/" + str(video['id']) + ".json",
-                headers={'USER-AGENT':USER_AGENT}).json()
+                headers={'USER-AGENT': USER_AGENT}).json()
             list_item.setInfo('video', {
                 'duration': int(round(media['duration_in_ms']/1000)),
                 'title': media['title'],
@@ -236,7 +238,7 @@ def play_video(video_id, uuid):
     if uuid == 'None':
         uuid = requests.get(
             VIDEO_API + "media/" + video_id + ".json",
-            headers={'USER-AGENT':USER_AGENT}).json()['uuid']
+            headers={'USER-AGENT': USER_AGENT}).json()['uuid']
     play_item = xbmcgui.ListItem(
         path="https://cdn-segments.tierwelt-live.de/" + uuid + "_twl_720p.m4v/playlist.m3u8")
     xbmcplugin.setResolvedUrl(HANDLE, True, listitem=play_item)
