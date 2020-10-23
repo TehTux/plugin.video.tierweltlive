@@ -16,6 +16,7 @@
   <disclaimer lang="en">This is an unofficial video plugin for TIERWELT Live (www.tierwelt-live.de) which is not supported by the distributors of the portal.</disclaimer>
   <language>de</language>
   <platform>all</platform>
+  <license>GPL-2.0-only</license>
   <source>https://github.com/TehTux/plugin.video.tierweltlive</source>
   <assets>
     <icon>resources\icon.jpg</icon>
