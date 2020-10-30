@@ -1,8 +1,8 @@
 # coding=utf-8
 """Kodi Video Plugin for TIERWELT Live"""
 import sys
-from urllib import urlencode
-from urlparse import parse_qsl
+from urllib.parse import urlencode
+from urllib.parse import parse_qsl
 import json
 import re
 from xml.dom import minidom
@@ -222,8 +222,8 @@ def list_videos(page_id, page):
             })
             url = get_url(action='play_video', id=video['pk'], uuid='None')
         list_item.addStreamInfo('video', {
-            'width': unicode(1280),
-            'height': unicode(720)
+            'width': str(1280),
+            'height': str(720)
         })
         list_item.setProperty('IsPlayable', 'true')
         xbmcplugin.addDirectoryItem(HANDLE, url, list_item, False)
